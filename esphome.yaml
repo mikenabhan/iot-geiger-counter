@@ -1,0 +1,77 @@
+substitutions:
+  devicename: geiger
+  upper_devicename: Geiger Counter
+
+esphome:
+  name: $devicename
+  platform: ESP32
+  board: nodemcu-32s
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  
+  ap:
+    ssid: ${upper_devicename} Fallback Hotspot
+    password: !secret fallback_password
+    
+captive_portal:
+
+# Optional manual IP
+#  manual_ip:
+#    static_ip: 192.168.0.195
+#    gateway: 192.168.0.1
+#    subnet: 255.255.255.0
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  password: !secret api_password
+
+ota:
+  password: !secret ota_password
+
+switch:
+  - platform: restart
+    name: ${upper_devicename} Restart
+    
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: ${upper_devicename} IP Address
+    ssid:
+      name: ${upper_devicename} Connected SSID
+    bssid:
+      name: ${upper_devicename} Connected BSSID
+
+sensor:
+  - platform: pulse_counter
+    pin: GPIO36
+    name: ${upper_devicename}
+    id: "geiger_counter"
+    unit_of_measurement: 'CPM'
+    on_raw_value:
+      - sensor.template.publish:
+          id: radiation_level
+          state: !lambda 'return x / 153.8;'
+  - platform: template
+    name: "Radiation Level"
+    id: "radiation_level"
+    unit_of_measurement: 'µSv/h'
+    icon: mdi:radioactive
+    accuracy_decimals: 5
+    
+binary_sensor:
+  - platform: template
+    device_class: safety
+    name: "Radiation Warning"
+    lambda: |-
+      if (id(geiger_counter).state > 100) {
+        // High Count.
+        return true;
+      } else {
+        // Normal Count.
+        return false;
+      }
