@@ -56,6 +56,7 @@ sensor:
       - sensor.template.publish:
           id: radiation_level
           state: !lambda 'return x / 153.8;'
+          # this was what I got for my data sheet and it matched reasonably well with the background data that I have.  Many people are using other values.
   - platform: template
     name: "Radiation Level"
     id: "radiation_level"
@@ -67,6 +68,7 @@ binary_sensor:
   - platform: template
     device_class: safety
     name: "Radiation Warning"
+    # This doesn't necessarily represent a "dangerous" count, but one that is abnormally high
     lambda: |-
       if (id(geiger_counter).state > 100) {
         // High Count.
